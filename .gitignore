@@ -1,0 +1,26 @@
+################################################
+# Unreal Engine Git Ignore
+################################################
+
+# Engine build/cache
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.sln
+*.suo
+*.VC.db
+*.opensdf
+*.opendb
+
+# Build artifacts
+*.pdb
+*.obj
+*.pch
+*.db
+*.log
