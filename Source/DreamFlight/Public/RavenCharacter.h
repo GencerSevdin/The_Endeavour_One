@@ -8,7 +8,6 @@
 #include "LivingCharacters.h"
 #include "InputActionValue.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "LandscapeNaniteComponent.h"
 #include "RavenCharacter.generated.h"
 
 //class FInputActionValue;
@@ -80,14 +79,13 @@ private:
 
 	UCharacterMovementComponent* RavenCharacterMovement;	
 	UPROPERTY(EditAnywhere, Category = "Movement")
-	UAnimMontage* Eating;
+	UAnimMontage* EatMontage;
 	ECharacterState CharacterState = ECharacterState::Hover;
 	
 	//Konma sistemi 
-	AController* GetOwnerController() const;
 	FCollisionShape Sphere = FCollisionShape::MakeSphere(15.f);
 	FHitResult Floor;
-	bool  CanPearch(USceneComponent*& OutComponent, FTransform& OutComponentTransform);
+	bool  CanPearch(USceneComponent*& OutComponent);
 	//bool CanPearch();
 	bool CalcDistanceToFloor(FHitResult& OutDistance);
 	FVector BirdCurrLoc;
@@ -95,16 +93,12 @@ private:
 	USceneComponent* PearchComp;
 	//FVector ComponentLocation;
 	FVector CompLoc;
-	FTransform ComponentTransform;
-	FTransform PearchTransform;
 	FVector DesiredLocation = FVector::ZeroVector;
-	FVector Location;
-	FRotator Rotation;
 	bool bIsLanding = false;
 	bool bHasValidPearchPoint;
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float PearchApproachSpeed = 300;
-	TArray<USceneComponent*>SceneComponents;
+	
 
 	float TransformedSin();
 	float RunningTime;
@@ -123,9 +117,18 @@ private:
 	float MaxCAIntensity = 50.F;
 	float CAInterpSpeed = 5.f;
 	// ===== SPLINE LANDING SYSTEM =====
-	UPROPERTY()
-	class USplineComponent* LandingSpline = nullptr;
+	UPROPERTY(VisibleAnywhere, Category = "Landing")
+	USplineComponent* LandingSpline = nullptr;
 
+	//Find Spline Way
+	FVector ComputeStageMid(float Distance, float SideOffset);
+	bool IsPathClear(const FVector& Start, const FVector& End);
+	FVector LandingMid;
+	bool bHasLandingSpline = false;
+	float LandingSplineDistance = 0.f;
+	UPROPERTY(EditAnywhere, Category = "Landing")
+	float LandingSplineSpeed = 200;
+	void BuildLandingSpline();
 	
 	
 };

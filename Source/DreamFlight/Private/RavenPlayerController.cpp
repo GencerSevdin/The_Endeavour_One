@@ -34,7 +34,6 @@ void ARavenPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(SearchPointAction, ETriggerEvent::Completed, this, &ARavenPlayerController::StopSearchPearchablePoints);
 		EnhancedInputComponent->BindAction(UpDownAction, ETriggerEvent::Started, this, &ARavenPlayerController::FlyingStart);
 		EnhancedInputComponent->BindAction(EatAction, ETriggerEvent::Triggered, this, &ARavenPlayerController::Eat);
-		//EnhancedInputComponent->BindAction(TransformationAction, ETriggerEvent::Triggered, this, &ARavenPlayerController::Transform);
 		
 	}
 }

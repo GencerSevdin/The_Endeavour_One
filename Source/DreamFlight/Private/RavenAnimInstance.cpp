@@ -28,7 +28,7 @@ void URavenAnimInstance::NativeUpdateAnimation(float DeltaTime)
 void URavenAnimInstance::AnimNotify_StartJump()
 {
 	if (RavenCharacter && RavenCharacterMovement)
-	RavenCharacter->AddMovementInput(RavenCharacter->GetActorUpVector(),10);
+	RavenCharacter->AddMovementInput(RavenCharacter->GetActorUpVector(),50);
 	
 }
 
