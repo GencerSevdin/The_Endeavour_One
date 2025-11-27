@@ -4,9 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "RavenCharacter.h"
+#include "CharacterEnumType.h"
 #include "CharacterStatComponent.generated.h"
-
-
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class DREAMFLIGHT_API UCharacterStatComponent : public UActorComponent
 {
@@ -24,5 +24,12 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-		
+	private:
+	//Describing RavenCharacter
+	ARavenCharacter* RavenCharacter;
+	UCharacterMovementComponent* RavenMovementComponent;
+	//Calculate Speed
+	
+	
+	
 };

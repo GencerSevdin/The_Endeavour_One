@@ -13,6 +13,9 @@
 //class FInputActionValue;
 class UCameraComponent;
 class USplineComponent;
+class UCharacterStatComponent;
+class AItems;
+class AEatableItems;
 UCLASS()
 class DREAMFLIGHT_API ARavenCharacter : public ALivingCharacters
 {
@@ -33,16 +36,21 @@ public:
 	void StopToSearch();
 	void Eat(const FInputActionValue& Value);
 	void Acceleration(bool bSpeedUp);
+	void AddUpOffset();
 	bool bValueSpeedUp = false;
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	float Speed = 0;
+	UPROPERTY(BlueprintReadOnly)
+	float Speed;
+	FVector VelocityOfCharacter;
 	
 	UPROPERTY(BlueprintReadOnly)
 	bool bCanFlap;
-	FORCEINLINE ECharacterState GetCharacterState() const { return CharacterState;}
+	FORCEINLINE ELocomotionState GetLocomotionState() const { return LocomotionState;}
+	FORCEINLINE ELocomotionDirection GetLocomotionDirection()const {return LocomotionDirection;} 
+	FORCEINLINE EGroundActions GetGroundActionState() const { return GroundActionState;}
 	UPROPERTY(BlueprintReadOnly)
 	float DistanceToFloor;
-
+	
+	FORCEINLINE void SetOverlappingItem(AItems* Item){OverlappingItem = Item;}
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -56,7 +64,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Movement")
 	float TurnRateDeg = 20;
 	UPROPERTY(EditAnywhere, Category = "Movement")
-	float RollReturnDegPerSec = 50;
+	float RollReturnDegPerSec = 15;
 	float DesiredPitch = 0;
 	float DesiredRoll = 0;
 	float CurrentPitch;
@@ -78,9 +86,11 @@ private:
 	float CamLagSpeed = 12.f; //RInterpTo speed
 
 	UCharacterMovementComponent* RavenCharacterMovement;	
-	UPROPERTY(EditAnywhere, Category = "Movement")
-	UAnimMontage* EatMontage;
-	ECharacterState CharacterState = ECharacterState::Hover;
+	UCharacterStatComponent* RavenStatComp;
+	
+	ELocomotionState LocomotionState;
+	ELocomotionDirection LocomotionDirection;
+	EGroundActions GroundActionState;
 	
 	//Konma sistemi 
 	FCollisionShape Sphere = FCollisionShape::MakeSphere(15.f);
@@ -127,8 +137,17 @@ private:
 	bool bHasLandingSpline = false;
 	float LandingSplineDistance = 0.f;
 	UPROPERTY(EditAnywhere, Category = "Landing")
-	float LandingSplineSpeed = 200;
+	float LandingSplineSpeed = 500;
 	void BuildLandingSpline();
-	
+	//-----------EatActionMontage------------------
+	UPROPERTY(EditAnywhere)
+	UAnimMontage* EatMontage;
+	void PlayEatMontage();
+	UFUNCTION(BlueprintCallable)
+	void EndEatMontage();
+	UFUNCTION(BlueprintCallable)
+	void OnEatNotify();
+	AItems* OverlappingItem;
+	AEatableItems* EatingTarget;
 	
 };

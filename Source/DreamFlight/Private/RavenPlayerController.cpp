@@ -28,7 +28,7 @@ void ARavenPlayerController::SetupInputComponent()
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
 	{
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ARavenPlayerController::Move);
-		EnhancedInputComponent->BindAction(AccelerationAction, ETriggerEvent::Started, this, &ARavenPlayerController::Acceleration);
+		EnhancedInputComponent->BindAction(AccelerationAction, ETriggerEvent::Triggered, this, &ARavenPlayerController::Acceleration);
 		EnhancedInputComponent->BindAction(TurnAction, ETriggerEvent::Triggered, this, &ARavenPlayerController::Look);
 		EnhancedInputComponent->BindAction(SearchPointAction, ETriggerEvent::Triggered, this, &ARavenPlayerController::SearchPearchablePoints);
 		EnhancedInputComponent->BindAction(SearchPointAction, ETriggerEvent::Completed, this, &ARavenPlayerController::StopSearchPearchablePoints);

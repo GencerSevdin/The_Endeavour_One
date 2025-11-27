@@ -24,7 +24,9 @@ class DREAMFLIGHT_API URavenAnimInstance : public UAnimInstance
 	class UCharacterMovementComponent* RavenCharacterMovement;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character State")
-	ECharacterState CharacterState;
+	ELocomotionState LocomotionState;
+	UPROPERTY(BlueprintReadOnly, Category = "Movement | Character State")
+	ELocomotionDirection LocomotionDirection;
 	UFUNCTION()
 	void AnimNotify_StartJump();
 	UFUNCTION()

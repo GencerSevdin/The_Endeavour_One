@@ -2,6 +2,8 @@
 
 
 #include "HungryComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "RavenCharacter.h"
 
 // Sets default values for this component's properties
 UHungryComponent::UHungryComponent()
@@ -19,7 +21,11 @@ void UHungryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
+	RavenCharacter = Cast<ARavenCharacter>(GetOwner());
+	if (RavenCharacter)
+	{
+		 RavenMovementComp = RavenCharacter->GetCharacterMovement();
+	}
 	
 }
 
@@ -28,7 +34,23 @@ void UHungryComponent::BeginPlay()
 void UHungryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	CalculateHunger();
+	
+	
+}
 
-	// ...
+float UHungryComponent::CalculateHunger()
+{
+	if ( RavenMovementComp->MovementMode == MOVE_Flying )
+	{
+		Hunger -= GetWorld()->GetDeltaSeconds() * 2;
+	}
+	return FMath::Clamp(Hunger, MinHunger, MaxHunger);
+}
+
+float UHungryComponent::RecoverHunger(float feed)
+{
+	Hunger += feed;
+	return Hunger;
 }
 

@@ -8,6 +8,9 @@
 #include"Camera/CameraComponent.h"
 #include "Components/SplineComponent.h"
 #include "Animation/AnimMontage.h"
+#include "Items.h" 
+#include "CharacterStatComponent.h"
+#include "EatableItems.h"
 // Sets default values
 ARavenCharacter::ARavenCharacter()
 {
@@ -35,10 +38,13 @@ void ARavenCharacter::BeginPlay()
 	SpringArm = FindComponentByClass<USpringArmComponent>();
 	Camera = FindComponentByClass<UCameraComponent>();
 	RavenCharacterMovement = GetCharacterMovement();
-	if (RavenCharacterMovement)
-	{
-		RavenCharacterMovement->MaxFlySpeed = SlowSpeed;
-	}
+	
+}
+
+void ARavenCharacter::AddUpOffset()
+{
+	
+	
 }
 
 
@@ -51,70 +57,71 @@ void ARavenCharacter::SetFlyMode(bool bEnable)
 		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		if (RavenCharacterMovement)
 		RavenCharacterMovement ->SetMovementMode(MOVE_Flying);
-		
-		
 	}
 	else
 	{
 		bIsLanding = true;
 		RavenCharacterMovement ->SetMovementMode(MOVE_Falling);
 		if (bHasValidPearchPoint)
-		{
+		{	
 			BuildLandingSpline();
 			UE_LOG(LogTemp, Warning, TEXT("Landing spline created"));
 		}
 		
-	}
-
-	
+	}	
 }
 void ARavenCharacter::Movement(const FInputActionValue& Value)
 {
+	if (GroundActionState == EGroundActions::Eating) return;
 	FVector MovementVector = Value.Get<FVector>();
-	const float DT = GetWorld()->GetDeltaSeconds();
-	FVector ForwardVector  = GetActorForwardVector();
+	float DT = GetWorld()->GetDeltaSeconds();
+	FVector ForwardVector = GetActorForwardVector();
 	FVector UpVector = GetActorUpVector();
-	if (!bHasValidPearchPoint  )
-	{
-		AddMovementInput(ForwardVector,  MovementVector.Y);
-		if (RavenCharacterMovement->IsFlying())
-		{
-			AddMovementInput(UpVector, MovementVector.Z);
-			if (MovementVector.Z > 0.f && Speed > 500.f )
-			{
-				CharacterState = ECharacterState::Flapping;
-				AddActorWorldOffset(FVector(0, 0,  TransformedSin()));
-			
-			
-			}
-			if(MovementVector.Z == 0.f && Speed > 500.f)
-			{
-				CharacterState = ECharacterState::Flapping;
-				if (!bValueSpeedUp)
-				{   					
-					RavenCharacterMovement->MaxFlySpeed =  SlowSpeed;
-				}
-			}
-			 if (MovementVector.Z < 0.f && Speed > 500.f)
-			{
-				CharacterState = ECharacterState::Gliding;
-				RavenCharacterMovement->MaxFlySpeed =  MaxSpeed;
-			
-			}
-			if (Speed < 500.f)
-			{
-				CharacterState = ECharacterState::Hover;
-			}
-			float CurrentMeshPitch = GetMesh()->GetRelativeRotation().Pitch;
-			float CurrentMeshRoll = GetMesh()->GetRelativeRotation().Roll;
-			DesiredRoll = FMath::FInterpConstantTo(DesiredRoll, MovementVector.Z * 2, DT, RollReturnDegPerSec);
-			DesiredPitch = FMath::FInterpTo(DesiredPitch, MovementVector.X * 2, DT, RollReturnDegPerSec);
-			FRotator NewRot = FRotator(CurrentMeshPitch + DesiredPitch, MeshBaseRot.Yaw, CurrentMeshRoll - DesiredRoll);
-			if (Speed > 500)
-				GetMesh()->SetRelativeRotation(NewRot);
+	float CurrentMeshPitch = GetMesh()->GetRelativeRotation().Pitch;
+	DesiredRoll = FMath::FInterpConstantTo(DesiredRoll, MovementVector.X * 2, DT, RollReturnDegPerSec);
+	AddMovementInput(ForwardVector, MovementVector.Y);
+	AddMovementInput(UpVector, MovementVector.Z);
 	
+	AddMovementInput(UpVector, MovementVector.Z);
+	if (MovementVector.Y > 0)
+	{
+		AddMovementInput(ForwardVector, MovementVector.Y);
+		RavenCharacterMovement->MaxFlySpeed= SlowSpeed;
+	}
+	if (MovementVector.X > 0 )
+	{
+		LocomotionDirection = ELocomotionDirection::TurningRight;
+		AddControllerYawInput(MovementVector.X * DT * TurnRateDeg);
+		UE_LOG(LogTemp, Warning, TEXT("Movement TurningRight"));
+	}
+	else if (MovementVector.X < 0 )
+	{
+		LocomotionDirection = ELocomotionDirection::TurningLeft;
+		AddControllerYawInput(MovementVector.X * DT * TurnRateDeg);
+		UE_LOG(LogTemp, Warning, TEXT("Movement TurningLeft"));
+	}
+	else
+	{
+		LocomotionDirection = ELocomotionDirection::None;
+	}
+	if (RavenCharacterMovement ->IsFlying())
+	{
+		if (MovementVector.Z > 0)
+		{
+			LocomotionState = ELocomotionState::Climbing;
+			AddActorWorldOffset(FVector(0, 0,  TransformedSin()));
+			RavenCharacterMovement ->MaxFlySpeed = SlowSpeed;
 		}
-		AddControllerYawInput(MovementVector.X*DT*TurnRateDeg);
+		else if (MovementVector.Z < 0)
+		{
+			LocomotionState = ELocomotionState::Gliding;
+			RavenCharacterMovement->MaxFlySpeed = FastSpeed;
+		}
+	}
+	FRotator NewRot = FRotator(CurrentMeshPitch + DesiredRoll, MeshBaseRot.Yaw, MeshBaseRot.Roll);
+	if (Speed > 500)
+	{
+		GetMesh()->SetRelativeRotation(NewRot);
 	}
 }
 void ARavenCharacter::Look(const FInputActionValue& Value)
@@ -146,20 +153,47 @@ void ARavenCharacter::StopToSearch()
 {
 	bHasValidPearchPoint = false;
 }
+void ARavenCharacter::PlayEatMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if ( AnimInstance && EatMontage)
+	{
+			GroundActionState = EGroundActions::Eating;
+			AnimInstance->Montage_Play(EatMontage);
+			UE_LOG(LogTemp, Warning, TEXT("BirdCharacter::Eat"));
+		
+
+	}
+	
+
+}
+
+void ARavenCharacter::EndEatMontage()
+{
+	GroundActionState = EGroundActions::Unoccupied;
+}
+
 
 void ARavenCharacter::Eat(const FInputActionValue& Value)
-{
-	
-	
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		if (AnimInstance && EatMontage)
+{	
+		AEatableItems* EatableItems = Cast<AEatableItems>(OverlappingItem);
+		if (EatableItems &&  GroundActionState == EGroundActions::Unoccupied)
 		{
-			AnimInstance->Montage_Play(EatMontage);
+			PlayEatMontage();
+			EatingTarget = EatableItems;
+			
 		}
-		UE_LOG(LogTemp, Warning, TEXT("BirdCharacter::Eat"));
 	
-	
-	
+}
+void ARavenCharacter::OnEatNotify()
+{
+	if (EatingTarget)
+	{
+		EatingTarget -> Eat();
+		EatingTarget = nullptr;
+		
+	}
+	GroundActionState = EGroundActions::Unoccupied;
 }
 
 void ARavenCharacter::Acceleration(bool bSpeedUp)
@@ -186,30 +220,31 @@ void ARavenCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	static int FrameCounter = 0;
 	FrameCounter++;
+	RunningTime += DeltaTime;
+	VelocityOfCharacter = RavenCharacterMovement->Velocity;
+	Speed = VelocityOfCharacter.Size2D();	
+	if (Speed <= 500)
+	{
+		LocomotionState = ELocomotionState::Hover;
+	}
+	else
+	{
+		LocomotionState = ELocomotionState::Flapping;
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("Speed: %f"), Speed);
 	/*FVector Mid = ComputeStageMid(400.f, 80.f);
 	DrawDebugSphere(GetWorld(), Mid, 20.f, 12, FColor::Yellow, false, 1.f);
 	DrawDebugLine(GetWorld(), GetActorLocation(), Mid, FColor::Cyan, false, 1.f, 0, 1.f);*/
-	RunningTime += DeltaTime;
+	
 	//Otomatik mesh roll duzeltme 
-	FVector VelocityOfBird =  RavenCharacterMovement->Velocity;
-	Speed = VelocityOfBird.Size2D();
-
-	UE_LOG(LogTemp, Display, TEXT("Speed: %f"), Speed);
-	
-	CurrentPitch = BirdMeshComponent->GetRelativeRotation().Pitch;
-	CurrentRoll = BirdMeshComponent->GetRelativeRotation().Roll;
-	TargetMeshPitch  = FMath::FInterpTo(CurrentPitch, MeshBaseRot.Pitch, DeltaTime, 5);
-	TargetMeshRoll = FMath::FInterpTo(CurrentRoll, MeshBaseRot.Roll, DeltaTime, 5);
-	BirdMeshComponent->SetRelativeRotation(FRotator(TargetMeshPitch, MeshBaseRot.Yaw, TargetMeshRoll));
-
+	CurrentPitch = GetMesh()->GetRelativeRotation().Pitch;
+	DesiredPitch = FMath::FInterpTo(CurrentPitch, MeshBaseRot.Pitch, DeltaTime,5);
+	GetMesh()->SetRelativeRotation(FRotator(DesiredPitch, MeshBaseRot.Yaw,MeshBaseRot.Roll));
 	//Controlling Camera View
-	
-	
 	const FRotator Target(CamPitch, CamYaw, 0.f);
-
-	
-	const FRotator Current = SpringArm->GetRelativeRotation(); // veya GetRelativeRotation()
-	const FRotator Smoothed = FMath::RInterpTo(Current, Target, DeltaTime, CamLagSpeed);
+	const FRotator Current = SpringArm->GetRelativeRotation(); // veya GetRelativeRotation()const 
+	FRotator Smoothed = FMath::RInterpTo(Current, Target, DeltaTime, CamLagSpeed);
 	SpringArm->SetRelativeRotation(Smoothed);
 	//--------------------Dala konma sistemi -----------------------------------------------------------
 	if (bIsLanding && bHasValidPearchPoint)
@@ -220,17 +255,22 @@ void ARavenCharacter::Tick(float DeltaTime)
 			LandingSplineDistance += LandingSplineSpeed * DeltaTime;
 			LandingSplineDistance = FMath::Clamp(LandingSplineDistance,0.f,Splinelength);
 			//--------------
-			const FVector TargetLocation = LandingSpline->GetLocationAtDistanceAlongSpline(LandingSplineDistance,ESplineCoordinateSpace::World);
+			const FVector SplineLoc = LandingSpline->GetLocationAtDistanceAlongSpline(LandingSplineDistance,ESplineCoordinateSpace::World);
 			const FRotator SplineRotation = LandingSpline->GetRotationAtDistanceAlongSpline(LandingSplineDistance, ESplineCoordinateSpace::World);
-			SetActorLocation(TargetLocation);
 			
+			FHitResult Hit;
+			const FVector CurrLoc = GetActorLocation();
+			FVector TargetLoc = SplineLoc - CurrLoc;
 			SetActorRotation(SplineRotation);
+			AddActorWorldOffset(TargetLoc, true, &Hit );
+			
+			
 		
 			UE_LOG(LogTemp, Display, TEXT("Landing along spline: Dist=%.1f"),
 			LandingSplineDistance);
 			const float RemaningDist = Splinelength - LandingSplineDistance;
 
-			if (RemaningDist <= 10.f)
+			if (RemaningDist <= 20.f)
 			{
 				if (PearchComp)	AttachToComponent(PearchComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 				
@@ -247,7 +287,7 @@ void ARavenCharacter::Tick(float DeltaTime)
 		}
 	}
 	//---------------------Calculate Distance To Floor -------------------------------------------
-	if (FrameCounter % 10 == 0)
+	if (FrameCounter % 6 == 0)
 	{
 		CalcDistanceToFloor(Floor);
 	
@@ -272,7 +312,6 @@ void ARavenCharacter::Tick(float DeltaTime)
 	);
 	Camera->PostProcessSettings.VignetteIntensity = FMath::FInterpTo(
 		Camera->PostProcessSettings.VignetteIntensity, TargetVignette, DeltaTime, FOVInterpSpeed);
-	
 	
 	
 
@@ -344,7 +383,7 @@ void ARavenCharacter::BuildLandingSpline()
 	const FVector Start = GetActorLocation();
 	const FVector End = PearchComp->GetComponentLocation();
 	const float MidDistance = 100.f;
-	const float SideOffset = 80.f;
+	const float SideOffset = 100.f;
 
 	LandingMid = ComputeStageMid(MidDistance, SideOffset);
 
@@ -433,5 +472,4 @@ bool ARavenCharacter::IsPathClear(const FVector& Start, const FVector& End)
 	
 		UE_LOG(LogTemp, Warning, TEXT("IsPathClear NO HIT"));
 		return  true;
-
 }

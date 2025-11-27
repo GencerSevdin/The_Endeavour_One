@@ -5,7 +5,11 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Items.generated.h"
-
+class USphereComponent;
+enum class ItemState : uint8
+{
+	EIS_Hovering
+};
 UCLASS()
 class AItems : public AActor
 {
@@ -18,9 +22,19 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UStaticMeshComponent* ItemMesh;
+	UFUNCTION()
+	virtual void OnSphereOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+	virtual void EndSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+							UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	ItemState ItemsState;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	private:
+	UPROPERTY(VisibleAnywhere)
+	USphereComponent* SphereComp;
 
 };

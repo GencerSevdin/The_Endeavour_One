@@ -2,6 +2,9 @@
 
 
 #include "CharacterStatComponent.h"
+ 
+
+
 
 // Sets default values for this component's properties
 UCharacterStatComponent::UCharacterStatComponent()
@@ -19,7 +22,12 @@ void UCharacterStatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
+	 RavenCharacter = Cast<ARavenCharacter>(GetOwner());
+	if (RavenCharacter)
+	{
+		 RavenMovementComponent = RavenCharacter->GetCharacterMovement();
+		
+	}
 	
 }
 
@@ -28,6 +36,8 @@ void UCharacterStatComponent::BeginPlay()
 void UCharacterStatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	
+	
 
 	// ...
 }
